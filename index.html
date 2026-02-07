@@ -3,68 +3,201 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Will you be my Valentine?</title>
+  <title>Valentine?</title>
   <style>
+    :root{
+      --pink:#ff2d75;
+      --bg1:#ffe0ec;
+      --bg2:#ffffff;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+    }
+    *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
     body{
-      margin:0;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background: linear-gradient(135deg, #ffe0ec, #fff);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      margin:0; min-height:100vh; display:grid; place-items:center;
+      background: radial-gradient(circle at top, var(--bg1), var(--bg2) 65%);
+      color:var(--text); overflow:hidden;
     }
     .card{
-      background:white;
-      padding:28px 24px;
+      width:min(520px,92vw);
+      background:var(--card);
+      border:1px solid #ffd0df;
       border-radius:24px;
+      box-shadow:0 20px 60px rgba(0,0,0,.10);
+      padding:26px 22px;
       text-align:center;
-      max-width:420px;
-      width:90%;
-      box-shadow:0 20px 40px rgba(0,0,0,.12);
+      position:relative;
+      z-index:2;
     }
-    h1{ margin:10px 0 12px; }
+    .emoji{font-size:46px; margin-bottom:6px}
+    h1{margin:10px 0 6px; font-size:30px}
+    p{margin:0 0 18px; color:var(--muted); line-height:1.5}
+    .name{color:var(--pink); font-weight:800}
+    .btns{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:10px}
     button{
-      border:none;
-      border-radius:14px;
-      padding:12px 20px;
-      font-size:16px;
-      cursor:pointer;
-      margin:8px;
+      border:0; border-radius:14px;
+      padding:12px 18px; font-size:16px; cursor:pointer;
+      transition:transform .08s ease;
+      user-select:none;
     }
-    .yes{ background:#ff2d75; color:white; }
-    .no{ background:#f3f4f6; }
+    button:active{transform:scale(.98)}
+    .yes{background:var(--pink); color:white}
+    .no{background:#f3f4f6; color:#111827; position:relative}
     .msg{
       display:none;
       margin-top:16px;
-      padding:14px;
-      border-radius:14px;
+      padding:14px 12px;
+      border-radius:16px;
       background:#fff5f9;
       border:1px dashed #ff9fc0;
+    }
+    .copy{
+      background:#111827; color:white; margin-top:10px;
+      padding:10px 14px; border-radius:12px;
+    }
+    .tiny{font-size:13px; color:var(--muted); margin-top:8px; display:none}
+    /* floating hearts */
+    .heart{
+      position:fixed;
+      left:50%;
+      bottom:-30px;
+      font-size:22px;
+      opacity:.9;
+      animation: floatUp linear forwards;
+      z-index:1;
+      pointer-events:none;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.10));
+    }
+    @keyframes floatUp{
+      from{ transform: translate(-50%, 0) scale(1) rotate(0deg); opacity:.95; }
+      to{ transform: translate(calc(-50% + var(--drift)), calc(-1 * var(--rise))) scale(var(--scale)) rotate(var(--rot)); opacity:0; }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div style="font-size:42px;">💘</div>
-    <h1>Will you be my Valentine?</h1>
-    <p>I promise love, laughs, and annoying you forever 🤍</p>
 
-    <button class="yes" onclick="yes()">Yes 😍</button>
-    <button class="no" onclick="nope()">No 🙃</button>
+  <div class="card" id="card">
+    <div class="emoji">💘</div>
 
-    <div class="msg" id="msg">
-      YAYYY 💕 Screenshot this and send it to me 😌
+    <h1>Hey <span class="name" id="bfName">you</span>…</h1>
+    <p id="subText">I have one very important question 🤍</p>
+
+    <h1 id="mainQ" style="margin-top:0;">Will you be my Valentine?</h1>
+
+    <div class="btns">
+      <button class="yes" id="yesBtn">Yes 😍</button>
+      <button class="no" id="noBtn">No 🙃</button>
+    </div>
+
+    <div class="msg" id="msgBox">
+      <h2 style="margin:6px 0 6px;">YAYYYYY 💕</h2>
+      <p style="margin:0 0 10px;" id="yesMsg">Screenshot this and send it to me 😌</p>
+      <button class="copy" id="copyBtn">Copy cute reply</button>
+      <div class="tiny" id="copied">Copied ✅</div>
     </div>
   </div>
 
   <script>
-    function yes(){
-      document.getElementById("msg").style.display = "block";
+    // ====== CUSTOMIZE TEXT HERE (edit these 4 lines if you want) ======
+    const DEFAULT_NAME = "babe"; // shows if no name passed
+    const SUB_TEXT = "I have one very important question 🤍";
+    const QUESTION = "Will you be my Valentine?";
+    const YES_MESSAGE = "Screenshot this and send it to me 😌";
+    const COPY_REPLY = "YESSS ❤️ I’m your Valentine. Now tell me when and where 😉";
+    // ================================================================
+
+    // Name via URL: ?name=Ahmad
+    const params = new URLSearchParams(location.search);
+    const name = params.get("name") || DEFAULT_NAME;
+    document.getElementById("bfName").textContent = name;
+
+    // Apply text customizations
+    document.getElementById("subText").textContent = SUB_TEXT;
+    document.getElementById("mainQ").textContent = QUESTION;
+    document.getElementById("yesMsg").textContent = YES_MESSAGE;
+
+    const msgBox = document.getElementById("msgBox");
+    const copied = document.getElementById("copied");
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
+    const card   = document.getElementById("card");
+
+    // YES button
+    yesBtn.addEventListener("click", () => {
+      msgBox.style.display = "block";
+      copied.style.display = "none";
+      burstHearts(20);
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    });
+
+    // Copy reply button
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(COPY_REPLY);
+        copied.style.display = "block";
+      } catch (e) {
+        prompt("Copy this:", COPY_REPLY);
+      }
+    });
+
+    // RUNAWAY "NO" button (mobile + desktop)
+    function moveNoButton(){
+      const rect = card.getBoundingClientRect();
+      const btnRect = noBtn.getBoundingClientRect();
+
+      // room to move within the card
+      const maxX = rect.width - btnRect.width - 16;
+      const maxY = rect.height - btnRect.height - 16;
+
+      // random position
+      const x = Math.random() * maxX;
+      const y = Math.random() * maxY;
+
+      // place relative to card
+      noBtn.style.position = "absolute";
+      noBtn.style.left = x + "px";
+      noBtn.style.top  = y + "px";
     }
-    function nope(){
-      alert("Nice try 😏 Just press YES.");
+
+    // On hover (desktop) and touchstart (mobile)
+    noBtn.addEventListener("mouseenter", moveNoButton);
+    noBtn.addEventListener("touchstart", (e) => { e.preventDefault(); moveNoButton(); }, {passive:false});
+    noBtn.addEventListener("click", () => alert("Nice try 😏 Just press YES."));
+
+    // FLOATING HEARTS continuously
+    const heartEmojis = ["💗","💖","💘","💕","💞","❤️"];
+    function spawnHeart(){
+      const h = document.createElement("div");
+      h.className = "heart";
+      h.textContent = heartEmojis[Math.floor(Math.random()*heartEmojis.length)];
+
+      const left = Math.random() * 100; // vw
+      const rise = 700 + Math.random()*600; // px
+      const drift = (Math.random()*220 - 110) + "px";
+      const scale = (0.8 + Math.random()*0.9).toFixed(2);
+      const rot = (Math.random()*120 - 60) + "deg";
+      const dur = (5 + Math.random()*4).toFixed(2) + "s";
+
+      h.style.left = left + "vw";
+      h.style.setProperty("--rise", rise + "px");
+      h.style.setProperty("--drift", drift);
+      h.style.setProperty("--scale", scale);
+      h.style.setProperty("--rot", rot);
+      h.style.animationDuration = dur;
+
+      document.body.appendChild(h);
+      setTimeout(() => h.remove(), 9500);
     }
+
+    function burstHearts(n){
+      for(let i=0;i<n;i++){
+        setTimeout(spawnHeart, i*60);
+      }
+    }
+
+    // start gentle floating hearts
+    setInterval(spawnHeart, 550);
   </script>
 </body>
 </html>
